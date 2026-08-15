@@ -1,4 +1,4 @@
-# 一键启动（Windows PowerShell）
+﻿# 一键启动（Windows PowerShell）
 # 用法：右键「使用 PowerShell 运行」或  .\scripts\run_local.ps1
 $ErrorActionPreference = 'Stop'
 $root = Split-Path $PSScriptRoot -Parent
@@ -18,4 +18,4 @@ if (-not (Test-Path '.env')) {
 }
 
 Write-Host '🚀 启动中... 浏览器访问 http://localhost:8501 （Ctrl+C 停止）' -ForegroundColor Green
-& $py -m streamlit run web/app.py
+& $py -m streamlit run web/app.py --server.address 127.0.0.1
