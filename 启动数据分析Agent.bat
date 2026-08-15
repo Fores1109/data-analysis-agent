@@ -1,14 +1,20 @@
 @echo off
-chcp 65001 >nul
-title 数据分析 Agent 启动器
+title Data Analysis Agent Launcher
 echo ============================================
-echo   📊 数据分析 Agent 启动中...
-echo   首次运行会自动安装依赖（需要联网）
-echo   启动后请用浏览器打开 http://localhost:8501
+echo   Data Analysis Agent is starting...
+echo   Then open http://localhost:8501 in browser
 echo ============================================
 echo.
 cd /d "%~dp0"
+where pwsh >nul 2>nul
+if errorlevel 1 goto use_powershell
+pwsh -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\run_local.ps1"
+goto done
+:use_powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\run_local.ps1"
+:done
 echo.
-echo 程序已退出。
+echo ============================================
+echo   App exited. Press any key to close.
+echo ============================================
 pause
