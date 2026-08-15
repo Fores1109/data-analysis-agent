@@ -41,7 +41,6 @@ def build_agent(df, llm=None, verbose=False, max_iterations=20):
         include_df_in_prompt=include_df_in_prompt,
         allow_dangerous_code=True,              # LangChain 官方要求显式允许执行 pandas 代码
         max_iterations=max_iterations,
-        handle_parsing_errors=True,
     )
 
 

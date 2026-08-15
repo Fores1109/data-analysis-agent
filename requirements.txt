@@ -13,3 +13,4 @@ requests>=2.31
 openpyxl>=3.1
 SQLAlchemy>=2.0
 markdown>=3.5
+tabulate>=0.9
