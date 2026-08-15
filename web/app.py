@@ -12,10 +12,15 @@ import streamlit as st
 
 from app import config
 from app.data_source import load_api, load_db, load_file
+from app.theme import apply_theme, page_header
 
 st.set_page_config(page_title="数据分析 Agent", page_icon="📊", layout="wide")
-st.title("📊 数据分析 Agent")
-st.caption("基于 LangChain 的多功能数据分析助手：自然语言问答 · 图表 · SQL 助手 · A/B 实验 · 机器学习 · 因果推断 · 报告")
+apply_theme()
+page_header(
+    "📊",
+    "数据分析 Agent",
+    "基于 LangChain 的多功能数据分析助手：自然语言问答 · 图表 · SQL 助手 · A/B 实验 · 机器学习 · 因果推断 · 报告",
+)
 
 
 def remember(df, name):

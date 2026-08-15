@@ -8,10 +8,11 @@ import pandas as pd
 import streamlit as st
 
 from app.experiments import ab_proportion, ab_ttest, simulate_ab
+from app.theme import apply_theme, page_header
 
 st.set_page_config(page_title="A/B 实验", page_icon="🧪", layout="wide")
-st.title("🧪 A/B 实验")
-st.caption("对两组数据进行统计检验：Welch t 检验（连续指标）/ 双比例 z 检验（转化率），含效应量与结论解读")
+apply_theme()
+page_header("🧪", "A/B 实验", "对两组数据进行统计检验：Welch t 检验（连续指标）/ 双比例 z 检验（转化率），含效应量与结论解读")
 
 
 def show_result(res: dict):

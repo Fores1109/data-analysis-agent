@@ -7,10 +7,11 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import streamlit as st
 
 from app import charts, config, report
+from app.theme import apply_theme, page_header
 
 st.set_page_config(page_title="报告生成", page_icon="📑", layout="wide")
-st.title("📑 自动生成分析报告")
-st.caption("汇总当前会话的数据概览、问答记录与图表，一键导出 Markdown / HTML")
+apply_theme()
+page_header("📑", "自动生成分析报告", "汇总当前会话的数据概览、问答记录与图表，一键导出 Markdown / HTML")
 
 df = st.session_state.get("df")
 if df is None:

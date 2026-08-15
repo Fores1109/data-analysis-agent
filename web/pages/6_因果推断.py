@@ -8,10 +8,11 @@ import pandas as pd
 import streamlit as st
 
 from app.experiments import did, ols
+from app.theme import apply_theme, page_header
 
 st.set_page_config(page_title="因果推断", page_icon="🔗", layout="wide")
-st.title("🔗 因果推断")
-st.caption("教学级实现：多元回归控制已观测混杂 / 双重差分 DID；回归只能控制已观测变量，不能证明因果。解释变量建议选数值列（类别列请先在数据源中编码为数字）")
+apply_theme()
+page_header("🔗", "因果推断", "教学级实现：多元回归控制已观测混杂 / 双重差分 DID；回归只能控制已观测变量，不能证明因果。解释变量建议选数值列（类别列请先在数据源中编码为数字）")
 
 if "df" not in st.session_state:
     st.warning("请先到「首页」加载数据")

@@ -10,10 +10,11 @@ from app import config
 from app.llm import create_llm
 from app.sql_assistant import (autocomplete, explain_sql, generate_sql,
                                get_schema, optimize_sql)
+from app.theme import apply_theme, page_header
 
 st.set_page_config(page_title="SQL 助手", page_icon="🗄️", layout="wide")
-st.title("🗄️ SQL 助手（Copilot 式辅助）")
-st.caption("连接数据库 → 可视化表结构 → 自动补全 → 自然语言生成 SQL → 执行计划 → 优化建议")
+apply_theme()
+page_header("🗄️", "SQL 助手（Copilot 式辅助）", "连接数据库 → 可视化表结构 → 自动补全 → 自然语言生成 SQL → 执行计划 → 优化建议")
 
 url = st.text_input("数据库连接串", value=config.DB_URL)
 

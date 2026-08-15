@@ -8,10 +8,11 @@ import pandas as pd
 import streamlit as st
 
 from app.ml_runner import auto_train
+from app.theme import apply_theme, page_header
 
 st.set_page_config(page_title="机器学习", page_icon="🤖", layout="wide")
-st.title("🤖 机器学习：自动选模型与训练")
-st.caption("选择目标列后自动判断分类/回归任务，对比多个模型，输出测试集指标与特征重要性")
+apply_theme()
+page_header("🤖", "机器学习：自动选模型与训练", "选择目标列后自动判断分类/回归任务，对比多个模型，输出测试集指标与特征重要性")
 
 if "df" not in st.session_state:
     st.warning("请先到「首页」加载数据")

@@ -8,10 +8,11 @@ import streamlit as st
 
 from app.agent import build_agent
 from app.llm import create_llm
+from app.theme import apply_theme, page_header
 
 st.set_page_config(page_title="自然语言分析", page_icon="💬", layout="wide")
-st.title("💬 自然语言问答分析")
-st.caption("对当前数据用自然语言提问，Agent 自动编写并执行 pandas 代码，返回结论")
+apply_theme()
+page_header("💬", "自然语言问答分析", "对当前数据用自然语言提问，Agent 自动编写并执行 pandas 代码，返回结论")
 
 if "df" not in st.session_state:
     st.warning("请先到「首页」加载数据")

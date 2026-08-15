@@ -7,10 +7,11 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import streamlit as st
 
 from app import charts
+from app.theme import apply_theme, page_header
 
 st.set_page_config(page_title="图表可视化", page_icon="📈", layout="wide")
-st.title("📈 图表可视化")
-st.caption("选择图表类型与字段生成交互图表；开启「悬停解释」后悬浮提示会带上列说明。")
+apply_theme()
+page_header("📈", "图表可视化", "选择图表类型与字段生成交互图表；开启「悬停解释」后悬浮提示会带上列说明。")
 
 if "df" not in st.session_state:
     st.warning("请先到「首页」加载数据")

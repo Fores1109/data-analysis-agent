@@ -57,10 +57,18 @@ def time_series(df, date_col, value_col, agg="sum", title=""):
 def _tidy(fig):
     fig.update_layout(
         template="plotly_white",
+        colorway=["#4F6EF7", "#8B5CF6", "#0EA5E9", "#10B981", "#F59E0B",
+                  "#F43F5E", "#14B8A6", "#6366F1"],
+        font=dict(family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif",
+                  size=12, color="#1E293B"),
         hovermode="x unified",
         margin=dict(l=40, r=20, t=60, b=40),
         title_font_size=16,
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(255,255,255,0.55)",
     )
+    fig.update_xaxes(gridcolor="rgba(148,163,184,.22)", zeroline=False, title_font_size=12)
+    fig.update_yaxes(gridcolor="rgba(148,163,184,.22)", zeroline=False, title_font_size=12)
     return fig
 
 
