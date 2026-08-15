@@ -98,6 +98,14 @@ docker compose up -d         # API: http://localhost:8000/docs
 
 **可以准备的问题**：SARIMA 为什么用周季节？STL 鲁棒分解的原理？DID 的平行趋势假设？Shapley 值的公理化性质？qcut 打分 vs 自定义阈值？类别不平衡怎么处理？LTV 的口径（含未付费用户）？次留/7留/30留的行业基准？
 
+## 📜 原创性与参考声明
+
+- 本项目**核心代码全部为本人独立实现**（Agent 封装、AutoML、SHAP 解释、时序建模、因果推断、游戏分析等模块），未复制任何开源项目代码
+- **架构模式**（LangChain Agent + Streamlit 前端 + FastAPI 后端）参考了开源项目 [khang3004/DataAnalysis_Agent](https://github.com/khang3004/DataAnalysis_Agent) 的组织方式，在此致谢
+- **第三方依赖**（LangChain / LangGraph / Optuna / SHAP / statsmodels / scikit-learn / Streamlit / FastAPI 等）按各自开源许可证（MIT / Apache-2.0 / BSD）使用，详见各库文档
+- **数据**：Olist 巴西电商数据集来自 [Kaggle](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce)，遵循其许可（CC BY-NC-SA 4.0，仅限学习/非商业展示）；游戏场景数据为本项目内置的模拟数据生成器（幂律留存衰减模型）产出，可复现
+- 本项目以 **MIT License** 开源（见 [LICENSE](LICENSE)），欢迎学习与二次开发
+
 ## 📚 参考与致谢
 
 - 架构灵感：[khang3004/DataAnalysis_Agent](https://github.com/khang3004/DataAnalysis_Agent)
