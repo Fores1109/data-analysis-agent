@@ -42,6 +42,7 @@ def main():
     ok &= check("页面9 销售预测", "web/pages/9_销售预测.py")
     ok &= check("页面10 RFM分层", "web/pages/10_RFM分层.py")
     ok &= check("页面11 游戏数据分析", "web/pages/11_游戏数据分析.py")
+    ok &= check("页面12 游戏深度分析", "web/pages/12_游戏深度分析.py")
     print("✓ Streamlit 页面全部渲染正常" if ok else "✗ 存在页面异常")
 
 
