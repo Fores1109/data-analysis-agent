@@ -101,7 +101,6 @@ git push -u origin main
 ## ⚠️ 注意
 
 - Agent 会执行 LLM 生成的 Python 代码（pandas），请只分析可信数据
-- `deepseek-reasoner` 不支持函数调用，请用 `deepseek-chat`
 - 因果推断为教学级实现（numpy OLS/DID），正式研究请用专业库（statsmodels、DoWhy）
 - 本仓库交付时已通过冒烟测试逻辑审查；首次运行请先执行 `python tests/test_smoke.py`
 

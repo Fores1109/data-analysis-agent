@@ -14,3 +14,9 @@ openpyxl>=3.1
 SQLAlchemy>=2.0
 markdown>=3.5
 tabulate>=0.9
+# 算法深度
+optuna>=3.6
+shap>=0.46
+statsmodels>=0.14
+# 架构深度
+langgraph>=0.2

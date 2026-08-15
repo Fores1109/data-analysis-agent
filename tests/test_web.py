@@ -38,6 +38,9 @@ def main():
     ok &= check("页面5 机器学习", "web/pages/5_机器学习.py", {"df": DF})
     ok &= check("页面6 因果推断", "web/pages/6_因果推断.py", {"df": DF})
     ok &= check("页面7 报告生成", "web/pages/7_报告生成.py", {"df": DF})
+    ok &= check("页面8 模型解释", "web/pages/8_模型解释.py", {"df": DF})
+    ok &= check("页面9 销售预测", "web/pages/9_销售预测.py")
+    ok &= check("页面10 RFM分层", "web/pages/10_RFM分层.py")
     print("✓ Streamlit 页面全部渲染正常" if ok else "✗ 存在页面异常")
 
 
