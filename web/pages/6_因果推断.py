@@ -38,7 +38,7 @@ if method == "多元回归（控制混杂）":
     if result:
         st.subheader("回归结果")
         coef_df = pd.DataFrame(result["系数表"]).T.reset_index().rename(columns={"index": "变量"})
-        st.dataframe(coef_df, use_container_width=True)
+        st.dataframe(coef_df, width='stretch')
         c1, c2 = st.columns(2)
         c1.metric("R²", result["R²"])
         c2.metric("样本量", result["样本量"])
@@ -83,4 +83,4 @@ else:  # DID
         st.info(result["提示"])
         with st.expander("查看完整回归表"):
             coef_df = pd.DataFrame(result["完整回归"]["系数表"]).T.reset_index().rename(columns={"index": "变量"})
-            st.dataframe(coef_df, use_container_width=True)
+            st.dataframe(coef_df, width='stretch')

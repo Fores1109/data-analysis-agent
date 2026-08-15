@@ -53,7 +53,7 @@ try:
 
     if use_hints:
         fig = charts.with_hover_hints(fig, hints)
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width='stretch')
 
     if st.button("➕ 把这张图加入报告"):
         st.session_state.setdefault("report_charts", []).append(fig)

@@ -39,7 +39,7 @@ if res:
     c3.metric("最优模型", res["最优模型"])
 
     st.subheader("候选模型对比")
-    st.dataframe(pd.DataFrame(res["候选结果"]), use_container_width=True)
+    st.dataframe(pd.DataFrame(res["候选结果"]), width='stretch')
 
     st.subheader("测试集指标")
     st.write(res["测试集指标"])

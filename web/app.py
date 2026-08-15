@@ -86,17 +86,17 @@ c3.metric("缺失值总数", int(df.isna().sum().sum()))
 
 tab1, tab2, tab3 = st.tabs(["数据预览", "统计描述", "数据类型"])
 with tab1:
-    st.dataframe(df.head(100), use_container_width=True)
+    st.dataframe(df.head(100), width='stretch')
 with tab2:
     num = df.select_dtypes(include="number")
     if num.shape[1]:
-        st.dataframe(num.describe().T, use_container_width=True)
+        st.dataframe(num.describe().T, width='stretch')
     else:
         st.info("当前没有数值列")
 with tab3:
     st.dataframe(
         pd.DataFrame({"列名": df.columns, "类型": df.dtypes.astype(str).values}),
-        use_container_width=True,
+        width='stretch',
     )
 
 # ---------- 悬停解释设置 ----------

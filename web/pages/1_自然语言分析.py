@@ -26,7 +26,7 @@ except Exception as e:
 
 # 数据变化时重建 Agent（缓存于会话中，避免重复初始化）
 key = st.session_state.get("data_key")
-if st.session_state.get("_agent_key") != key:
+if "agent" not in st.session_state or st.session_state.get("_agent_key") != key:
     with st.spinner("正在初始化 Agent..."):
         try:
             st.session_state["agent"] = build_agent(df, llm)
@@ -34,7 +34,10 @@ if st.session_state.get("_agent_key") != key:
         except Exception as e:
             st.error(f"Agent 初始化失败：{e}")
             st.stop()
-agent = st.session_state["agent"]
+agent = st.session_state.get("agent")
+if agent is None:
+    st.error("Agent 尚未就绪，请回到「首页」重新加载数据。")
+    st.stop()
 
 if "qa_history" not in st.session_state:
     st.session_state["qa_history"] = []

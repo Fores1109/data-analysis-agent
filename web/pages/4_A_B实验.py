@@ -17,7 +17,7 @@ st.caption("对两组数据进行统计检验：Welch t 检验（连续指标）
 def show_result(res: dict):
     """渲染检验结果：指标行 + 结论高亮。"""
     df = pd.DataFrame([{k: v for k, v in res.items() if k != "结论"}])
-    st.dataframe(df, use_container_width=True)
+    st.dataframe(df, width='stretch')
     st.markdown(f"**📌 结论：** {res['结论']}")
 
 
