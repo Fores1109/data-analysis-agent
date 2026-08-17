@@ -4,6 +4,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+import pandas as pd
 import streamlit as st
 
 from app.agent import build_agent
@@ -14,6 +15,14 @@ from app.theme import apply_theme, page_header
 st.set_page_config(page_title="自然语言分析", page_icon="💬", layout="wide")
 apply_theme()
 page_header("💬", "自然语言问答分析", "对当前数据用自然语言提问；可切换「经典单 Agent」或「LangGraph 多 Agent 流水线（规划→分析→报告）」")
+
+with st.expander("🛡️ 安全须知（重要）"):
+    st.markdown(
+        "本页面会让 AI 生成并**执行 pandas 代码**来分析您的数据（代码在您的机器上运行）。\n\n"
+        "- 系统提示词已约束 Agent **只做只读分析**：禁止删改文件、访问网络、执行系统命令；\n"
+        "- 请**仅对您信任的数据文件和问题**使用本功能，不要在包含密钥/密码的文件上提问；\n"
+        "- 更严格的隔离方案（容器/沙箱运行）见 README「安全说明」。"
+    )
 
 if "df" not in st.session_state:
     st.warning("请先到「首页」加载数据")
@@ -79,6 +88,10 @@ if q:
                     for i, res in enumerate(result.get("results", []), 1):
                         with st.expander(f"🔧 第 {i} 步分析结果"):
                             st.markdown(res)
+                    audit = result.get("audit", [])
+                    if audit:
+                        with st.expander("📜 审计日志（每步状态 / 耗时 / 错误）"):
+                            st.dataframe(pd.DataFrame(audit), width='stretch')
                     ans = result.get("report", "")
                     st.markdown("---")
                     st.markdown(ans)

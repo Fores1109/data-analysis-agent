@@ -49,7 +49,9 @@ GitHub 从 2021 年起**不允许用账号密码** push，要用 **Personal Acce
 
 ## 第 4 步：验证
 
-浏览器打开 `https://github.com/你的用户名/data-analysis-agent`，应该能看到 README 渲染、代码文件、数据目录。
+浏览器打开 `https://github.com/你的用户名/data-analysis-agent`，应该能看到 README 渲染与代码文件。
+> 注意：Olist 大数据集（约 60MB）**不进入仓库**（`.gitignore` 已排除 `data/olist/`）。
+> 面试官/使用者克隆后运行 `python scripts/download_data.py` 即可一键下载真实数据。
 
 ## 以后更新代码
 
@@ -69,7 +71,7 @@ git push
 | push 报 `Failed to connect` | 网络问题，重试；或改用 SSH（见下） |
 | 想删掉传错的仓库 | GitHub 仓库页 → Settings → Danger Zone → Delete this repository |
 | `.env` 会不会泄露密钥？ | 不会，`.gitignore` 已排除 `.env`，确认：`git ls-files | findstr env` 只应看到 `.env.example` |
-| 仓库太大？ | 56MB 数据没问题（GitHub 单仓库限 1GB+，单文件限 100MB） |
+| 仓库太大？ | 大数据集已移出仓库（`data/olist/` 被忽略），仓库体积很小；克隆后运行 `python scripts/download_data.py` 下载数据 |
 
 ## 进阶：SSH 方式（可免密推送，推荐长期用）
 

@@ -66,7 +66,8 @@ def automl_train(df: pd.DataFrame, target: str, n_trials: int = 30,
         X, y, test_size=test_size, random_state=random_state,
         stratify=(y if task == "classification" else None),
     )
-    scoring = "accuracy" if task == "classification" else "r2"
+    # 优化目标与最终排序指标保持一致：分类用 F1(weighted)，回归用 R²
+    scoring = "f1_weighted" if task == "classification" else "r2"
     metric_keys = ("F1", "准确率") if task == "classification" else ("R²", "RMSE")
 
     results, best_study = [], None
@@ -136,5 +137,5 @@ def automl_train(df: pd.DataFrame, target: str, n_trials: int = 30,
         "测试集指标": {k: v for k, v in best.items() if k in metric_keys},
         "模型对比": results,
         "特征重要性": importance,
-        "说明": "每个模型用 Optuna(TPE) 搜索超参；得分=交叉验证均值（分类 accuracy / 回归 R²）。",
+        "说明": "每个模型用 Optuna(TPE) 搜索超参；得分=交叉验证均值（分类 F1(weighted) / 回归 R²），与最终排序指标一致。",
     }

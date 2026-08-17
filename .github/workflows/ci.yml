@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - name: 安装依赖
+        run: pip install -r requirements.txt
+      - name: 语法检查（compileall）
+        run: python -m compileall -q app api web tests scripts
+      - name: 冒烟测试（数据/图表/A-B/OLS/DID/机器学习）
+        run: python tests/test_smoke.py
+      - name: 安全与修复点校验（API 路径白名单/规划解析/Yates 校正/Cohen's d）
+        run: python tests/verify_fixes.py
+      - name: 算法测试（AutoML/SHAP/时序/RFM；Olist 缺失时自动降级合成数据）
+        run: python tests/test_algo.py
+      - name: 游戏留存/活跃/付费测试
+        run: python tests/test_game.py
+      - name: 游戏关卡漏斗/首充/LTV/流失预警测试
+        run: python tests/test_game_advanced.py
+      - name: Streamlit 12 页面渲染测试
+        run: python tests/test_web.py

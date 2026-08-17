@@ -30,7 +30,10 @@ def ab_ttest(control, treatment):
     if len(a) < 3 or len(b) < 3:
         raise ValueError("每组至少需要 3 个有效样本")
     t, p = stats.ttest_ind(a, b, equal_var=False)
-    pooled = np.sqrt((a.std(ddof=1) ** 2 + b.std(ddof=1) ** 2) / 2)
+    # Cohen's d：pooled SD 用自由度加权的合并标准差（而非两组 std 的简单平均）
+    n1, n2 = len(a), len(b)
+    s1, s2 = a.std(ddof=1), b.std(ddof=1)
+    pooled = np.sqrt(((n1 - 1) * s1 ** 2 + (n2 - 1) * s2 ** 2) / (n1 + n2 - 2)) if n1 + n2 > 2 else 0.0
     d = (b.mean() - a.mean()) / pooled if pooled > 0 else 0.0
     return {
         "对照组均值": round(float(a.mean()), 4),
@@ -43,12 +46,21 @@ def ab_ttest(control, treatment):
     }
 
 
-def ab_proportion(control_success, control_n, treat_success, treat_n):
-    """两组转化率 A/B 检验（双比例 z 检验）。"""
+def ab_proportion(control_success, control_n, treat_success, treat_n, correct: bool = True):
+    """两组转化率 A/B 检验（双比例 z 检验，默认带 Yates 连续性校正）。
+
+    correct=True 时对 z 统计量做 Yates 连续性校正（更保守，小样本更稳妥；
+    样本量较大时校正影响可忽略，与主流统计库行为一致）。
+    """
     p1, p2 = control_success / control_n, treat_success / treat_n
     p_pool = (control_success + treat_success) / (control_n + treat_n)
     se = np.sqrt(p_pool * (1 - p_pool) * (1 / control_n + 1 / treat_n))
-    z = (p2 - p1) / se if se > 0 else 0.0
+    diff = p2 - p1
+    if correct:
+        # Yates 连续性校正：|差异| 减去半个单位频数对应的比例差，保留方向
+        correction = 0.5 * (1 / control_n + 1 / treat_n)
+        diff = max(0.0, abs(diff) - correction) * np.sign(diff)
+    z = diff / se if se > 0 else 0.0
     p = 2 * (1 - stats.norm.cdf(abs(z)))
     d = (p2 - p1) / np.sqrt(p_pool * (1 - p_pool)) if 0 < p_pool < 1 else 0.0
     return {
@@ -57,6 +69,7 @@ def ab_proportion(control_success, control_n, treat_success, treat_n):
         "转化率提升": f"{100 * (p2 - p1):+.2f}%",
         "z 值": round(float(z), 4),
         "p 值": round(float(p), 4),
+        "连续性校正": correct,
         "结论": _conclusion(p, d, "转化率"),
     }
 

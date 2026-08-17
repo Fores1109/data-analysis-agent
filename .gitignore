@@ -4,6 +4,9 @@ __pycache__/
 .env
 data/reports/
 data/charts/
+# 大数据集不纳入 Git：运行 scripts/download_data.py 下载
+data/olist/
+data/downloads/
 *.db
 .pytest_cache/
 .DS_Store

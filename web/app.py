@@ -35,6 +35,7 @@ def remember(df, name):
 # ---------- 侧边栏：数据源 ----------
 with st.sidebar:
     st.header("📥 数据源")
+    st.caption("🛡️ 请仅加载您信任的数据文件：自然语言问答会让 AI 生成并执行 pandas 代码（只读约束，详见「自然语言分析」页安全须知与 README）。")
     source = st.radio("选择数据来源", ["上传文件", "示例数据", "数据库查询", "API 接口"], key="source_type")
 
     if source == "上传文件":
