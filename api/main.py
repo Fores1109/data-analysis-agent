@@ -10,6 +10,7 @@
     请仅对可信数据调用，并建议将服务部署在隔离环境（Docker 容器内）。
 """
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -29,6 +30,8 @@ app = FastAPI(title="数据分析 Agent API", version="0.2.0")
 # API 允许访问的数据根目录（白名单；默认项目 data 目录，可用环境变量 DATA_ROOT 覆盖）
 DATA_ROOT = Path(os.getenv("DATA_ROOT", str(Path(__file__).resolve().parent.parent / "data"))).resolve()
 ALLOWED_SUFFIXES = (".csv", ".xlsx", ".xls", ".json")
+# Windows 盘符路径（C:\ 或 C:/）：在 Linux 上不会被识别为绝对路径，需显式拒绝
+_WINDOWS_DRIVE_RE = re.compile(r"^[A-Za-z]:[\\/]")
 
 
 def _resolve_data_path(data_path: str) -> Path:
@@ -36,12 +39,15 @@ def _resolve_data_path(data_path: str) -> Path:
 
     规则：
       - 相对路径（如 olist/orders.csv）按 data 目录解析；
-      - 绝对路径 / ../ 逃逸 / ~ 展开 / 盘符 一律拒绝（403）；
+      - 绝对路径 / ../ 逃逸 / ~ 展开 / Windows 盘符路径 一律拒绝（403，跨平台一致）；
       - 只允许 .csv/.xlsx/.xls/.json 后缀，且文件必须存在。
     """
     raw = (data_path or "").strip()
     if not raw:
         raise HTTPException(status_code=400, detail="data_path 不能为空")
+    # 显式拒绝盘符路径：Windows 上本就是绝对路径，Linux 上若当相对路径解析会绕过预期
+    if _WINDOWS_DRIVE_RE.match(raw):
+        raise HTTPException(status_code=403, detail="data_path 越权：不允许盘符/绝对路径")
     p = Path(raw)
     if not p.is_absolute():
         p = (DATA_ROOT / p).resolve()
