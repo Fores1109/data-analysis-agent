@@ -1,6 +1,5 @@
 # 核心 + 网页版依赖（本地一键使用装这份即可）
 langchain>=0.3.0,<0.4
-langchain-experimental>=0.3.0,<0.4
 langchain-openai>=0.3.0,<0.4
 pandas>=2.0
 numpy>=1.26

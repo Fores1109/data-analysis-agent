@@ -26,6 +26,8 @@ jobs:
         run: python tests/test_smoke.py
       - name: 安全与修复点校验（API 路径白名单/规划解析/Yates 校正/Cohen's d）
         run: python tests/verify_fixes.py
+      - name: 沙箱安全测试（代码执行拦截/超时熔断/工具集，无需 LLM）
+        run: python tests/test_sandbox.py
       - name: 算法测试（AutoML/SHAP/时序/RFM；Olist 缺失时自动降级合成数据）
         run: python tests/test_algo.py
       - name: 游戏留存/活跃/付费测试

@@ -1,6 +1,5 @@
 # API 部署依赖（不含 streamlit，Docker 用这份）
 langchain>=0.3.0,<0.4
-langchain-experimental>=0.3.0,<0.4
 langchain-openai>=0.3.0,<0.4
 pandas>=2.0
 numpy>=1.26

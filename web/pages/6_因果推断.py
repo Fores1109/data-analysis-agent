@@ -79,6 +79,9 @@ else:  # DID
         c1.metric("DID 估计值（处理效应）", result["DID 估计值"])
         c2.metric("p 值", result["p 值"])
         st.write(result["显著性"])
+        ci = result.get("95%置信区间")
+        if ci:
+            st.caption(f"95% 置信区间：[{ci[0]}, {ci[1]}]（{result['完整回归'].get('稳健标准误', 'HC1')} 稳健标准误）")
         st.markdown(f"**解释：** 实验组相对对照组在「前后」之间的变化差异为 {result['DID 估计值']} {result['显著性']}，"
                     f"可理解为干预带来的净效应估计。")
         st.info(result["提示"])

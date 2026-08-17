@@ -83,11 +83,16 @@ def simulate_ab(n_per_group=500, effect=0.5, control_mean=100, std=20, seed=42):
 
 
 # ---------- 因果推断 ----------
-def ols(df: pd.DataFrame, outcome: str, predictors: list):
-    """多元线性回归（numpy OLS）：返回系数表与拟合指标。
+def ols(df: pd.DataFrame, outcome: str, predictors: list, robust: str = "HC1"):
+    """多元线性回归（statsmodels OLS，默认 HC1 异方差稳健标准误）。
 
+    返回系数表（含 95% 置信区间）、R²、F 检验等；较 numpy 手写版：
+      - 标准误默认使用 HC1（稳健），对异方差更稳健；
+      - 附带 95% 置信区间与整体 F 检验。
     注意：回归只能控制已观测混杂，不能证明因果；报告里会给出提示。
     """
+    import statsmodels.api as sm
+
     d = df.copy()
     X = d[predictors].apply(pd.to_numeric, errors="coerce")
     y = pd.to_numeric(d[outcome], errors="coerce")
@@ -96,38 +101,46 @@ def ols(df: pd.DataFrame, outcome: str, predictors: list):
     n, k = len(y), X.shape[1] + 1
     if n < k + 2:
         raise ValueError(f"有效样本 {n} 太少，无法估计 {k} 个参数")
-    Xd = np.column_stack([np.ones(n), X.values])
-    names = ["const"] + list(X.columns)
-    beta = np.linalg.lstsq(Xd, y.values, rcond=None)[0]
-    resid = y.values - Xd @ beta
-    dof = max(n - k, 1)
-    sigma2 = float(resid @ resid / dof)
-    cov = sigma2 * np.linalg.pinv(Xd.T @ Xd)
-    se = np.sqrt(np.abs(np.diag(cov)))
-    t = beta / se
-    p = 2 * stats.t.sf(np.abs(t), df=dof)
-    ss_tot = float(((y - y.mean()) ** 2).sum())
-    r2 = 1 - float(resid @ resid / ss_tot) if ss_tot > 0 else 0.0
+
+    Xd = sm.add_constant(X, has_constant="add")
+    model = sm.OLS(y, Xd).fit(cov_type=robust)
+    ci = model.conf_int()
 
     coefs = {}
-    for name, b, s, tv, pv in zip(names, beta, se, t, p):
-        coefs[name] = {"系数": round(float(b), 4), "标准误": round(float(s), 4),
-                       "t": round(float(tv), 4), "p": round(float(pv), 4)}
-    return {"系数表": coefs, "R²": round(r2, 4), "样本量": int(n), "自由度": int(dof)}
+    for name in Xd.columns:
+        coefs[str(name)] = {
+            "系数": round(float(model.params[name]), 4),
+            "标准误": round(float(model.bse[name]), 4),
+            "t": round(float(model.tvalues[name]), 4),
+            "p": round(float(model.pvalues[name]), 4),
+            "95%置信区间": [round(float(ci.loc[name, 0]), 4), round(float(ci.loc[name, 1]), 4)],
+        }
+    return {
+        "系数表": coefs,
+        "R²": round(float(model.rsquared), 4),
+        "样本量": int(n),
+        "自由度": int(model.df_resid),
+        "F": round(float(model.fvalue), 4) if np.isfinite(model.fvalue) else None,
+        "F_p": round(float(model.f_pvalue), 4) if np.isfinite(model.f_pvalue) else None,
+        "稳健标准误": robust,
+        "提示": f"标准误使用 {robust}（异方差稳健）；回归只能控制已观测混杂，不能证明因果。",
+    }
 
 
 def did(df: pd.DataFrame, outcome: str, group_col: str, treated_value,
-        time_col: str, post_value, confounders: list = None):
-    """双重差分（DID）：需要面板数据（每个单元有 前/后 两个时点）。
+        time_col: str, post_value, confounders: list = None, robust: str = "HC1"):
+    """双重差分（DID，statsmodels OLS 实现）：需要面板数据（每个单元有 前/后 两个时点）。
 
-    DID 系数 = 实验组前后变化 − 对照组前后变化。
+    DID 系数 = 实验组前后变化 − 对照组前后变化；基于 statsmodels OLS（HC1 稳健标准误）。
+    平行趋势假设的说明会随结果返回（教学级提醒，正式研究建议使用
+    statsmodels 面板/事件研究或专用因果推断库）。
     """
     d = df.copy()
     d["_treated"] = (d[group_col].astype(str) == str(treated_value)).astype(int)
     d["_post"] = (d[time_col].astype(str) == str(post_value)).astype(int)
     d["_treated_post"] = d["_treated"] * d["_post"]
     preds = ["_treated", "_post", "_treated_post"] + list(confounders or [])
-    res = ols(d, outcome, preds)
+    res = ols(d, outcome, preds, robust=robust)
     did_coef = res["系数表"].get("_treated_post", {})
     p = did_coef.get("p", float("nan"))
     note = "（p<0.05，统计显著）" if not np.isnan(p) and p < 0.05 else "（不显著）"
@@ -135,6 +148,8 @@ def did(df: pd.DataFrame, outcome: str, group_col: str, treated_value,
         "DID 估计值": did_coef.get("系数"),
         "p 值": did_coef.get("p"),
         "显著性": note,
+        "95%置信区间": did_coef.get("95%置信区间"),
         "完整回归": res,
-        "提示": "DID 假设平行趋势；本工具为教学级实现，正式研究请使用专业因果推断库。",
+        "提示": ("DID 依赖平行趋势假设（若无干预，实验组与对照组变化趋势一致）；"
+                 f"标准误为 {robust} 稳健标准误。正式研究建议使用 statsmodels 面板模型或事件研究方法。"),
     }

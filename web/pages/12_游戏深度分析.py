@@ -127,9 +127,10 @@ with tab3:
 
 # ---------- 流失预警 ----------
 with tab4:
+    st.caption("v2：窗口特征（近 7/14 天活跃、活跃趋势、距上次付费天数）+ 3 个模型（LR/RF/HistGB）+ 时间切分 + 最佳阈值")
     horizon = st.slider("预测未来 N 天是否活跃（N 天内不活跃视为流失）", 3, 30, 7, 1)
     if st.button("🚨 训练流失预警模型", key="churn_run"):
-        with st.spinner("特征工程 + 训练逻辑回归/随机森林..."):
+        with st.spinner("特征工程 + 训练逻辑回归/随机森林/梯度提升..."):
             try:
                 st.session_state["churn"] = churn_prediction(
                     login_df, users_df, pay_df, level_df, horizon=int(horizon))
@@ -138,10 +139,12 @@ with tab4:
     churn = st.session_state.get("churn")
     if churn:
         st.subheader(f"口径：{churn['口径']}")
-        c1, c2, c3 = st.columns(3)
+        c1, c2, c3, c4 = st.columns(4)
         c1.metric("样本数", churn["样本数"])
         c2.metric("流失率", f"{churn['流失率%']}%")
         c3.metric("最优模型", churn["最优模型"])
+        c4.metric("最佳阈值", churn.get("最佳阈值", "-"))
+        st.caption(churn.get("切分方式", ""))
         st.subheader("模型对比")
         st.dataframe(pd.DataFrame(churn["模型对比"]), width='stretch')
         st.subheader("特征重要性（什么特征预示流失）")
