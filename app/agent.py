@@ -1,11 +1,12 @@
-"""自研数据分析 Agent（v3）：LangGraph 显式 ReAct 循环 + 自定义工具集 + 沙箱代码执行。
+"""自研数据分析 Agent（v3）：LangGraph 显式 ReAct 循环 + 自定义工具集 + 沙箱代码执行 + 分层记忆。
 
 替换 LangChain 官方 create_pandas_dataframe_agent（已标记 experimental）：
   - 显式 ReAct 循环：agent 节点（LLM 决策）→ 工具节点（执行）→ 条件边（继续 / 结束），
     循环上限 max_iterations，全流程消息可审计；
   - 自定义工具集：只读探索工具（df_head / df_columns / df_describe / df_shape / df_value_counts）
     + python_repl（通用 pandas 分析，双层安全防护）；
-  - 对话记忆：多轮提问共享历史（max_history 截断），可追问上文结论。
+  - 分层记忆（app/memory.py）：工作记忆（最近 N 轮原文）+ 滚动摘要（LLM 递归压缩早期对话）
+    + 长期记忆（结论文档字符级 TF-IDF 向量检索），每轮动态注入 system prompt。
 
 安全设计（硬约束，区别于提示词软约束）——python_repl 的四道防线：
   1. AST 静态检查：执行前逐节点扫描，禁止 os/subprocess/socket/open/eval/exec 等危险调用、
@@ -28,6 +29,7 @@ from langchain_core.tools import tool
 from langgraph.graph import END, START, StateGraph
 
 from .llm import create_llm
+from .memory import AgentMemory
 
 # ---------------------------------------------------------------------------
 # 安全层：AST 静态检查 + 受限执行环境（在沙箱子进程中运行，见 _SANDBOX_WRAPPER）
@@ -290,6 +292,7 @@ class AgentState(TypedDict):
     messages: list          # 本次运行的消息（AI 决策 / 工具结果）
     answer: str
     steps: int
+    memory_context: str     # 分层记忆注入的上下文（摘要 + 检索结论 + 最近对话）
 
 
 def _system_prompt(df, include_preview: bool) -> str:
@@ -315,8 +318,8 @@ def _system_prompt(df, include_preview: bool) -> str:
 
 
 def build_agent(df, llm=None, verbose=False, max_iterations=8, df_prompt_cells=20000,
-                max_history=10, sandbox_timeout=30):
-    """构建自研数据分析 Agent（LangGraph 显式 ReAct 循环 + 沙箱工具）。
+                sandbox_timeout=30, memory=None, memory_kwargs=None):
+    """构建自研数据分析 Agent（LangGraph 显式 ReAct 循环 + 沙箱工具 + 分层记忆）。
 
     参数:
         df: pandas.DataFrame
@@ -324,8 +327,9 @@ def build_agent(df, llm=None, verbose=False, max_iterations=8, df_prompt_cells=2
         verbose: 打印思考过程（调试用）
         max_iterations: 单次回答最多工具调用轮数
         df_prompt_cells: 数据元素总数超过该值时不把数据明细塞进提示词
-        max_history: 跨轮对话保留的历史消息对数
         sandbox_timeout: python_repl 单次执行超时（秒）
+        memory: 传入现成的 AgentMemory 实例（多 Agent 共享记忆时用）；默认新建
+        memory_kwargs: AgentMemory 构造参数（如 {"working_rounds": 4, "summarize_at": 8, "top_k": 3}）
     """
     import pandas as pd
 
@@ -335,10 +339,14 @@ def build_agent(df, llm=None, verbose=False, max_iterations=8, df_prompt_cells=2
     tools_by_name = {t.name: t for t in tools}
     llm_with_tools = llm.bind_tools(tools)
     include_preview = (df.shape[0] * df.shape[1]) < df_prompt_cells
-    system = SystemMessage(content=_system_prompt(df, include_preview))
+    base_system = _system_prompt(df, include_preview)
 
     def agent_node(state: AgentState) -> dict:
-        messages = [system] + list(state.get("messages", [])) + [
+        content = base_system
+        mem_ctx = state.get("memory_context", "")
+        if mem_ctx:
+            content = f"{base_system}\n\n{mem_ctx}"
+        messages = [SystemMessage(content=content)] + list(state.get("messages", [])) + [
             HumanMessage(content=state["question"])
         ]
         if verbose:
@@ -386,34 +394,33 @@ def build_agent(df, llm=None, verbose=False, max_iterations=8, df_prompt_cells=2
     graph.add_edge("tools", "agent")
     graph.add_edge("end", END)
     app = graph.compile()
-    return AgentRuntime(app, max_history=max_history)
+    return AgentRuntime(app, llm=llm, memory=memory, memory_kwargs=memory_kwargs)
 
 
 class AgentRuntime:
-    """Agent 运行时：跨轮对话记忆 + 兼容旧接口（.invoke({"input": q}) → {"output": str}）。"""
+    """Agent 运行时：分层记忆（工作/摘要/长期检索）+ 兼容旧接口（.invoke({"input": q}) → {"output": str}）。"""
 
-    def __init__(self, app, max_history: int = 10):
+    def __init__(self, app, llm=None, memory=None, memory_kwargs=None):
         self._app = app
-        self._history: list = []
-        self._max_history = max_history
+        self._memory = memory or AgentMemory(llm=llm, **(memory_kwargs or {}))
 
     def invoke(self, payload: dict, config: dict | None = None) -> dict:
         question = payload.get("input", "")
+        mem_ctx = self._memory.build_context(question)
         result = self._app.invoke({
             "question": question,
-            "messages": list(self._history),
+            "messages": [],
             "answer": "",
             "steps": 0,
+            "memory_context": mem_ctx,
         }, config=config)
         answer = result.get("answer", "")
-        # 记忆：只保留 用户提问 → 最终回答，丢弃中间工具消息
-        self._history = (self._history + [HumanMessage(content=question), AIMessage(content=answer)])
-        if len(self._history) > self._max_history * 2:
-            self._history = self._history[-self._max_history * 2:]
+        # 记忆：问答结束后入库（长期记忆 + 工作记忆 + 可能的滚动摘要）
+        self._memory.remember(question, answer)
         return {"output": answer}
 
     def clear_history(self):
-        self._history = []
+        self._memory.clear()
 
 
 def ask(df, question, llm=None, verbose=False, **kwargs):

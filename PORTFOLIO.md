@@ -32,7 +32,7 @@
 
 **数据分析 Agent 平台｜Python / LangGraph / Optuna / SHAP / Streamlit**
 
-- **自研 ReAct Agent（非官方封装）**：用 **LangGraph 手写显式 Agent 循环**（agent 节点 → 工具节点 → 条件边，循环上限可审计）替代已废弃的 `create_pandas_dataframe_agent`；自定义工具集（数据探索工具 + 通用 python_repl）、**多轮对话记忆**、**硬沙箱代码执行**（AST 静态检查 → 受限执行环境 → 独立子进程 → 30s 超时熔断，13 个安全用例覆盖 import os/open/to_csv/eval/socket/死循环等攻击面）
+- **自研 ReAct Agent（非官方封装）**：用 **LangGraph 手写显式 Agent 循环**（agent 节点 → 工具节点 → 条件边，循环上限可审计）替代已废弃的 `create_pandas_dataframe_agent`；自定义工具集（数据探索工具 + 通用 python_repl）、**分层记忆**（工作记忆 + LLM 滚动摘要 + 结论文档 TF-IDF 向量检索，支持跨轮引用）、**硬沙箱代码执行**（AST 静态检查 → 受限执行环境 → 独立子进程 → 30s 超时熔断，13 个安全用例覆盖 import os/open/to_csv/eval/socket/死循环等攻击面）
 - 实现**多 Agent 流水线 v2**（规划→逐项分析→报告生成，单步失败自动重试、每步状态/耗时审计日志、人工审核扩展位），支持 CSV/Excel/数据库/API 多数据源接入
 - 实现 **AutoML**：基于 **Optuna(TPE)** 对随机森林/梯度提升/线性模型做超参搜索并输出调参过程曲线；**CV 优化目标与最终排序指标统一**（分类 F1(weighted) / 回归 R²）
 - 实现模型可解释模块：基于 **SHAP TreeExplainer** 输出特征贡献排序、单样本 waterfall 解释与特征依赖图
@@ -50,7 +50,7 @@
 
 **Data Analysis Agent Platform | Python / LangGraph / Optuna / SHAP / Streamlit**
 
-- Built a **custom ReAct agent** (not a wrapper) with LangGraph: an explicit agent→tools→conditional-edge loop, a custom toolset (data-exploration tools + a general `python_repl`), **multi-turn conversation memory**, and a **hard code-execution sandbox** — AST static analysis (blocks os/subprocess/open/to_csv/eval/socket…), a restricted execution environment (whitelisted modules + sanitized builtins), an **isolated subprocess**, and a 30s timeout kill (13 security test cases)
+- Built a **custom ReAct agent** (not a wrapper) with LangGraph: an explicit agent→tools→conditional-edge loop, a custom toolset (data-exploration tools + a general `python_repl`), **layered memory** (working memory + LLM rolling-summary + conclusion-store TF-IDF vector retrieval for cross-turn reference), and a **hard code-execution sandbox** — AST static analysis (blocks os/subprocess/open/to_csv/eval/socket…), a restricted execution environment (whitelisted modules + sanitized builtins), an **isolated subprocess**, and a 30s timeout kill (13 security test cases)
 - Implemented a **LangGraph multi-agent pipeline v2** (plan → analyze with auto-retry → report) with auditable per-step status/elapsed logs and a reserved human-review hook; multi-source data ingestion (CSV/Excel/SQL/API)
 - Implemented **AutoML** with **Optuna (TPE)** across Random Forest / Gradient Boosting / Linear models with tuning-curve visualization (CV objective aligned with the final ranking metric: F1-weighted / R²)
 - Built model interpretability with **SHAP TreeExplainer**: feature contribution ranking, per-sample waterfall explanations, and dependence plots
@@ -72,6 +72,9 @@
 | DID 的前提假设？ | 平行趋势假设：若无干预，实验组与对照组变化趋势一致；我用 statsmodels OLS + HC1 稳健标准误实现，正式研究可扩展面板/事件研究 |
 | RFM 为什么用 qcut 打分？ | 等频分箱保证每档样本量均衡，避免阈值拍脑袋；缺点是极端值会被压缩，可换自定义阈值 |
 | **ReAct 循环怎么防止死循环？** | ① 条件边只在"有 tool_calls 且 steps < max_iterations（默认 8）"时回工具节点，否则结束；② 工具执行有 30s 超时熔断；③ 每轮消息都在 state 里可审计 |
+| **记忆管理怎么做？** | 三层：① 工作记忆保留最近 N 轮原文；② 超过阈值用 LLM 滚动压缩早期对话成摘要（旧摘要+溢出→新摘要，防止上下文膨胀）；③ 每轮 (问,答) 结论文档入库，字符级 n-gram TF-IDF 稀疏向量 + cosine 做本地语义检索（零 embedding API 依赖），每轮注入最相关结论——实测第 5 轮能跨轮引用第 1 轮的数字结论 |
+| **滚动摘要 vs 直接截断？** | 截断会丢早期关键结论；滚动摘要在保留语义的同时压缩 token；代价是摘要可能丢失细节（如精确数字），所以长期记忆（逐轮结论原文）正好补上——摘要给"全局脉络"，检索给"精确细节" |
+| **TF-IDF 检索 vs embedding 检索？** | TF-IDF：零依赖、确定性、可解释（字符 n-gram 对中文友好），但无语义泛化（同义词/改写召回弱）；embedding：语义更强但依赖外部 API/模型。项目选 TF-IDF 是为了零成本可复现，架构上检索接口已抽象，可无缝换 embedding |
 | **工具协议怎么设计？** | 用 LLM 原生 function calling（bind_tools）：工具 = 类型注解 + docstring 描述，LLM 返回结构化 tool_calls；工具节点按 id 匹配结果回填 ToolMessage，保证多工具并行/串行都正确 |
 | **AST 沙箱的绕过面？** | 诚实说明：静态检查挡常规攻击面（import/call/属性），但理论上可利用 pandas 内部漏洞或编码技巧；所以叠加受限 builtins + 独立子进程 + 超时，生产级再加容器隔离 |
 | 多 Agent 比单 Agent 好在哪？ | 任务分解降低单次推理复杂度、中间产物可审计可干预、各节点可独立替换/测试；v2 还支持单步失败自动重试与审计日志 |

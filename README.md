@@ -11,7 +11,8 @@
 
 | 亮点 | 说明 |
 |---|---|
-| **自研 Agent（非套壳）** | 抛弃已废弃的 `create_pandas_dataframe_agent`，用 **LangGraph 手写显式 ReAct 循环**（agent 节点 → 工具节点 → 条件边）：自定义工具集（探索工具 + 通用执行工具）、**多轮对话记忆**、循环上限与全流程消息审计 |
+| **自研 Agent（非套壳）** | 抛弃已废弃的 `create_pandas_dataframe_agent`，用 **LangGraph 手写显式 ReAct 循环**（agent 节点 → 工具节点 → 条件边）：自定义工具集（探索工具 + 通用执行工具）、**分层记忆**、循环上限与全流程消息审计 |
+| **分层记忆** | 工作记忆（最近 N 轮原文）+ **滚动摘要**（LLM 递归压缩早期对话，recursive summarization）+ **长期记忆**（结论文档字符级 n-gram TF-IDF 向量 + cosine 检索，零外部依赖），每轮动态注入上下文，支持跨轮引用 |
 | **硬沙箱（代码执行安全）** | python_repl 工具**四道防线**：AST 静态检查（禁 os/subprocess/open/eval/写文件属性）→ 受限执行环境（白名单模块 + 安全 builtins）→ **独立子进程**（崩溃不影响主进程）→ **超时熔断**（30s 强制终止） |
 | **AutoML** | Optuna(TPE) 对随机森林/梯度提升/线性模型做超参搜索，输出调参过程曲线与模型对比；CV 优化目标与最终排序指标一致（分类 F1(weighted) / 回归 R²） |
 | **模型可解释性** | SHAP TreeExplainer：特征贡献排序、单样本 waterfall、特征依赖图——回答"模型为什么这么预测" |
@@ -22,7 +23,7 @@
 | **双垂直场景包** | ① Olist 巴西电商真实数据（9.9 万订单 / 11.2 万明细行）→ 销售预测/RFM ② 游戏厂商分析 → 留存矩阵/关卡漏斗/首充转化/Cohort LTV/流失预警 |
 | **统计严谨性** | A/B 双比例 z 检验默认 **Yates 连续性校正**；Cohen's d 自由度加权合并标准差；AutoML CV 指标统一 |
 | **安全加固** | API 层 **data_path 路径白名单**（跨平台一致）；Agent 执行 **硬沙箱**（见上）；README 明确安全边界 |
-| **工程化** | Streamlit + FastAPI + 12 页面 + **7 套自动化测试**（含沙箱安全测试）+ GitHub Actions CI（3.11/3.12）+ 依赖锁定 + Docker |
+| **工程化** | Streamlit + FastAPI + 12 页面 + **8 套自动化测试**（含沙箱安全、分层记忆测试）+ GitHub Actions CI（3.11/3.12）+ 依赖锁定 + Docker |
 
 ## 🧭 功能页面
 
@@ -53,13 +54,13 @@ Streamlit 前端（12 个页面，统一主题，含安全须知提示）
  │               ├── 工具集：df_shape/df_columns/df_head/df_describe/df_value_counts
  │               │          + python_repl（沙箱执行）
  │               ├── 沙箱：AST 静态检查 → 受限执行环境 → 独立子进程 → 超时熔断
- │               ├── 记忆：多轮对话历史（max_history 截断）
+ │               ├── 记忆：工作记忆(最近 N 轮) + 滚动摘要(LLM 压缩) + 长期检索(TF-IDF)
  │               └── 多 Agent 流水线 v2（规划→分析[重试]→报告，审计日志）
  ├── 算法层      AutoML(Optuna) · SHAP · SARIMA/STL · IsolationForest
  │               · 流失预警 v2(LR/RF/HistGB+窗口特征+时间切分) · RFM
  │               · OLS/DID(statsmodels, HC1 稳健) · A/B 检验(Yates) · 留存/关卡/LTV
  ├── 服务层      FastAPI（路径白名单安全校验，Docker 一键起）
- ├── 质量层      GitHub Actions CI（7 套测试）+ 依赖锁定 requirements.lock.txt
+ ├── 质量层      GitHub Actions CI（8 套测试）+ 依赖锁定 requirements.lock.txt
  └── 存储        本地数据（大数据集不入库，脚本下载）+ 报告/图表导出
 ```
 
@@ -111,17 +112,19 @@ python scripts/download_data.py --dry-run  # 只检查远程文件是否可下�
 - 未下载数据时，`tests/test_algo.py` 会自动改用合成数据做轻量验证，**不影响 CI 与其余功能**
 - 游戏场景数据由内置模拟生成器产出（幂律留存衰减 + 渠道差异 + 帕累托付费），无需下载
 
-## ✅ 测试（7 套，全部通过，不消耗 LLM token；CI 自动运行）
+## ✅ 测试（8 套，全部通过，不消耗 LLM token；CI 自动运行）
 
 ```bash
 python tests/test_smoke.py         # 数据/图表/A-B/OLS(statsmodels)/DID/机器学习
 python tests/verify_fixes.py       # API 路径白名单/规划解析/Yates 校正/Cohen's d
 python tests/test_sandbox.py       # 沙箱安全：危险代码拦截/超时熔断/工具集（无需 LLM）
+python tests/test_memory.py        # 分层记忆：长期检索/工作记忆/滚动摘要（FakeLLM，无需真实 LLM）
 python tests/test_algo.py          # AutoML/SHAP/时序/RFM（Olist 缺失时自动降级合成数据）
 python tests/test_game.py          # 游戏留存/活跃/付费（模拟数据）
 python tests/test_game_advanced.py # 关卡漏斗/首充转化/LTV/流失预警 v2
 python tests/test_web.py           # 12 个页面渲染
 python tests/test_agent_e2e.py     # 自研 Agent 端到端（真实 LLM，需 .env 密钥，CI 不跑）
+python tests/test_agent_memory_e2e.py  # 分层记忆端到端（真实 LLM，需 .env 密钥，CI 不跑）
 ```
 
 ## 📦 部署
@@ -139,9 +142,10 @@ docker compose up -d         # API: http://localhost:8000/docs
 **背景**：市面上数据分析工具要么是纯聊天、要么是固定报表，我做了个结合两者的平台——自然语言驱动 + 算法深度，并覆盖电商与游戏两个垂直场景。
 
 **三个最值得讲的技术点**：
-1. **自研 Agent（不是套壳）**：LangChain 官方的 `create_pandas_dataframe_agent` 已标记 experimental 且无法注入安全控制，所以我用 LangGraph 手写了显式 ReAct 循环——agent 节点（LLM 决策）→ 工具节点（执行）→ 条件边（继续/结束），自定义工具集、多轮记忆、循环上限可审计。面试官问"Agent 是怎么实现的"，我可以直接讲图结构、工具协议（tool calling）、状态管理。
-2. **硬沙箱**：LLM 会生成代码，我的 python_repl 工具在**执行前做 AST 静态检查**（禁 os/subprocess/open/写文件属性），再放进**受限执行环境**（白名单模块 + 安全 builtins），最后**独立子进程 + 30s 超时**运行。这四道防线是代码级硬约束，不是提示词软约束——`tests/test_sandbox.py` 里 13 个用例覆盖 import os、open()、to_csv、eval、socket、死循环等攻击面。
-3. **AutoML / 可解释性**：Optuna(TPE) 调参曲线 + SHAP TreeExplainer，CV 优化目标与排序指标统一（分类 F1(weighted)）。
+1. **自研 Agent（不是套壳）**：LangChain 官方的 `create_pandas_dataframe_agent` 已标记 experimental 且无法注入安全控制，所以我用 LangGraph 手写了显式 ReAct 循环——agent 节点（LLM 决策）→ 工具节点（执行）→ 条件边（继续/结束），自定义工具集、循环上限可审计。面试官问"Agent 是怎么实现的"，我可以直接讲图结构、工具协议（tool calling）、状态管理。
+2. **分层记忆**：对话超过阈值后，用 LLM 把早期对话**滚动压缩**成要点摘要（recursive summarization，防止上下文无限膨胀）；每轮问答的结论进入**长期记忆**，用字符级 n-gram TF-IDF 稀疏向量 + cosine 做本地语义检索（零 embedding API 依赖），每轮把最相关的历史结论注入 system prompt——实测第 5 轮问"我之前问的最高月份是多少"，Agent 能从摘要/检索中正确引用 124,048 元。
+3. **硬沙箱**：LLM 会生成代码，我的 python_repl 工具在**执行前做 AST 静态检查**（禁 os/subprocess/open/写文件属性），再放进**受限执行环境**（白名单模块 + 安全 builtins），最后**独立子进程 + 30s 超时**运行。这四道防线是代码级硬约束，不是提示词软约束——`tests/test_sandbox.py` 里 13 个用例覆盖 import os、open()、to_csv、eval、socket、死循环等攻击面。
+4. **AutoML / 可解释性**：Optuna(TPE) 调参曲线 + SHAP TreeExplainer，CV 优化目标与排序指标统一（分类 F1(weighted)）。
 
 **垂直场景的故事（游戏流失预警 v2）**：v1 的随机切分会信息泄漏，我改成**时间切分**（按最近活跃日期排序，用过去预测未来）；特征工程加了**近 7/14 天活跃天数、活跃趋势、距上次付费天数**等窗口特征捕捉"活跃度衰减"；模型从 2 个加到 3 个（新增 HistGB）；最后用 **Youden's J 最佳阈值**生成高危名单。这套组合把 AUC 从 0.54 提到 0.65，更重要的是整个流程（预警→召回→再评估闭环）是业务可用的。
 
@@ -149,7 +153,7 @@ docker compose up -d         # API: http://localhost:8000/docs
 
 **数据**：Olist 巴西电商 9.9 万订单（11.2 万明细行）——SARIMA 周季节预测、RFM 分层 9.8 万客户、异常检测 37 个异常点（全部真实结果）。
 
-**可以准备的问题**：ReAct 循环如何避免死循环？tool calling 协议怎么设计？AST 检查的绕过面有哪些？沙箱为什么要子进程？SARIMA 为什么用周季节？DID 的平行趋势假设？Shapley 值的公理化性质？类别不平衡怎么处理？时间切分 vs 随机切分？LTV 的口径？次留/7留/30留的行业基准？
+**可以准备的问题**：ReAct 循环如何避免死循环？tool calling 协议怎么设计？AST 检查的绕过面有哪些？沙箱为什么要子进程？**滚动摘要 vs 截断？摘要丢了细节怎么办？TF-IDF 检索 vs embedding 检索的取舍？** SARIMA 为什么用周季节？DID 的平行趋势假设？Shapley 值的公理化性质？类别不平衡怎么处理？时间切分 vs 随机切分？LTV 的口径？次留/7留/30留的行业基准？
 
 ## 📜 原创性与参考声明
 
