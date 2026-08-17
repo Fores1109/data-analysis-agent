@@ -20,3 +20,6 @@ shap>=0.46
 statsmodels>=0.14
 # 架构深度
 langgraph>=0.2
+# API 服务（FastAPI，本地跑 API / 安全校验测试也用）
+fastapi>=0.110
+uvicorn>=0.29

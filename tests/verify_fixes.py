@@ -74,7 +74,8 @@ r = ab_ttest(a, b)
 ok.append("【Cohen's d】")
 s1, s2 = a.std(ddof=1), b.std(ddof=1)
 expected = (b.mean() - a.mean()) / np.sqrt(((len(a)-1)*s1**2 + (len(b)-1)*s2**2) / (len(a)+len(b)-2))
-ok.append(f"✓ Cohen's d = {r['Cohen\'s d']}（与自由度加权公式 round(4) 一致: {abs(r['Cohen\'s d'] - round(float(expected), 4)) < 1e-9}）")
+d_cohen = r["Cohen's d"]  # 兼容 Python 3.11：f-string 表达式内不能含反斜杠转义
+ok.append(f"✓ Cohen's d = {d_cohen}（与自由度加权公式 round(4) 一致: {abs(d_cohen - round(float(expected), 4)) < 1e-9}）")
 
 # 6. automl CV 指标统一（f1_weighted）
 from app.automl import automl_train
