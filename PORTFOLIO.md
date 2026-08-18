@@ -98,4 +98,3 @@
 - **测试**：`test_smoke.py` / `verify_fixes.py` / `test_sandbox.py` / `test_algo.py` / `test_game.py` / `test_game_advanced.py` / `test_web.py`（7 套，CI 自动运行）
 - **演示路径建议**：进「12_游戏深度分析」→ 生成模拟数据 → 分别点关卡漏斗 / 付费转化 / Cohort LTV / 流失预警，全程 1 分钟出结果
 
-> 📌 Demo 视频建议：录一段 1-2 分钟操作录屏（留存矩阵 + 流失预警高危名单是最好看的两个画面），放 YouTube/B 站后把链接贴到这里，面试官点开即看。
