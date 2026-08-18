@@ -137,23 +137,7 @@ docker compose up -d         # API: http://localhost:8000/docs
 - API 的 `data_path` 参数只接受 `data/` 目录内的相对路径（如 `sample_sales.csv`、`olist/olist_orders_dataset.csv`），白名单校验见 `api/main.py`
 - 生产部署建议：容器内运行 + 限制网络出口 + 仅挂载必要的 `data/` 子目录 + 前置鉴权（API 当前未内置认证，请勿直接暴露公网）
 
-## 🎙️ 面试讲稿（5 分钟版）
 
-**背景**：市面上数据分析工具要么是纯聊天、要么是固定报表，我做了个结合两者的平台——自然语言驱动 + 算法深度，并覆盖电商与游戏两个垂直场景。
-
-**三个最值得讲的技术点**：
-1. **自研 Agent（不是套壳）**：LangChain 官方的 `create_pandas_dataframe_agent` 已标记 experimental 且无法注入安全控制，所以我用 LangGraph 手写了显式 ReAct 循环——agent 节点（LLM 决策）→ 工具节点（执行）→ 条件边（继续/结束），自定义工具集、循环上限可审计。面试官问"Agent 是怎么实现的"，我可以直接讲图结构、工具协议（tool calling）、状态管理。
-2. **分层记忆**：对话超过阈值后，用 LLM 把早期对话**滚动压缩**成要点摘要（recursive summarization，防止上下文无限膨胀）；每轮问答的结论进入**长期记忆**，用字符级 n-gram TF-IDF 稀疏向量 + cosine 做本地语义检索（零 embedding API 依赖），每轮把最相关的历史结论注入 system prompt——实测第 5 轮问"我之前问的最高月份是多少"，Agent 能从摘要/检索中正确引用 124,048 元。
-3. **硬沙箱**：LLM 会生成代码，我的 python_repl 工具在**执行前做 AST 静态检查**（禁 os/subprocess/open/写文件属性），再放进**受限执行环境**（白名单模块 + 安全 builtins），最后**独立子进程 + 30s 超时**运行。这四道防线是代码级硬约束，不是提示词软约束——`tests/test_sandbox.py` 里 13 个用例覆盖 import os、open()、to_csv、eval、socket、死循环等攻击面。
-4. **AutoML / 可解释性**：Optuna(TPE) 调参曲线 + SHAP TreeExplainer，CV 优化目标与排序指标统一（分类 F1(weighted)）。
-
-**垂直场景的故事（游戏流失预警 v2）**：v1 的随机切分会信息泄漏，我改成**时间切分**（按最近活跃日期排序，用过去预测未来）；特征工程加了**近 7/14 天活跃天数、活跃趋势、距上次付费天数**等窗口特征捕捉"活跃度衰减"；模型从 2 个加到 3 个（新增 HistGB）；最后用 **Youden's J 最佳阈值**生成高危名单。这套组合把 AUC 从 0.54 提到 0.65，更重要的是整个流程（预警→召回→再评估闭环）是业务可用的。
-
-**统计严谨性**：DID 用 statsmodels OLS + **HC1 异方差稳健标准误** + 95% 置信区间；A/B 双比例 z 检验默认 **Yates 连续性校正**；Cohen's d 用自由度加权合并标准差——每个都是可以展开讲的统计细节。
-
-**数据**：Olist 巴西电商 9.9 万订单（11.2 万明细行）——SARIMA 周季节预测、RFM 分层 9.8 万客户、异常检测 37 个异常点（全部真实结果）。
-
-**可以准备的问题**：ReAct 循环如何避免死循环？tool calling 协议怎么设计？AST 检查的绕过面有哪些？沙箱为什么要子进程？**滚动摘要 vs 截断？摘要丢了细节怎么办？TF-IDF 检索 vs embedding 检索的取舍？** SARIMA 为什么用周季节？DID 的平行趋势假设？Shapley 值的公理化性质？类别不平衡怎么处理？时间切分 vs 随机切分？LTV 的口径？次留/7留/30留的行业基准？
 
 ## 📜 原创性与参考声明
 
