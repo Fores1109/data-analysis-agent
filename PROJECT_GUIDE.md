@@ -1,4 +1,4 @@
-# 📖 项目导览：data-analysis-agent 说明书
+# 📖 项目导览：DataPilot 说明书
 
 > 写给作者自己看的"项目说明书"
 > 建议配合 README.md（技术细节）和 PORTFOLIO.md（简历素材）一起食用。
