@@ -1,7 +1,7 @@
 # 📊 作品集：数据分析 Agent 平台
 
 > 求职方向：数据分析师 / 数据科学 / 算法工程师
-> 项目仓库：`https://github.com/<你的用户名>/data-analysis-agent`（上传后替换）
+> 项目仓库：`https://github.com/Fores1109/data-analysis-agent
 > 技术栈：Python · LangChain · LangGraph · Optuna · SHAP · statsmodels · scikit-learn · Streamlit · FastAPI · Docker
 
 ---
@@ -28,7 +28,7 @@
 
 ---
 
-## 版本一：简历项目描述（中文，推荐）
+## 版本一：简历项目描述
 
 **数据分析 Agent 平台｜Python / LangGraph / Optuna / SHAP / Streamlit**
 
