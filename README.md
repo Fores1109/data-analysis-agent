@@ -1,4 +1,4 @@
-# 📊 数据分析 Agent — 算法 / 数据科学作品集项目
+# 📊 DataPilot — 算法 / 数据科学作品集项目
 
 ![CI](https://github.com/Fores1109/data-analysis-agent/actions/workflows/ci.yml/badge.svg)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
