@@ -1,4 +1,4 @@
-# 📊 作品集：数据分析 Agent 平台
+# 📊 作品集：数据分析 Agent 平台：DataPilot
 
 > 求职方向：数据分析师 / 数据科学 / 算法工程师
 > 项目仓库：`https://github.com/Fores1109/data-analysis-agent
