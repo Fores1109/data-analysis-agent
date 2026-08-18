@@ -28,7 +28,7 @@
 
 ---
 
-## 版本一：简历项目描述
+## 简历项目描述
 
 **数据分析 Agent 平台｜Python / LangGraph / Optuna / SHAP / Streamlit**
 
@@ -42,11 +42,11 @@
 - 构建**游戏厂商分析模块**：同期群留存矩阵、留存曲线、DAU/WAU/MAU 粘性、付费率/ARPU/ARPPU、关卡通过漏斗、首充转化漏斗、Cohort LTV；并实现**流失预警 v2**——**窗口特征**（近 7/14 天活跃、活跃趋势、距上次付费天数、关卡推进速度）+ 逻辑回归/随机森林/**HistGB**（class_weight 处理 83~87% 流失率的类别不平衡）+ **时间切分**（按最近活跃日期排序，用过去预测未来，避免泄漏）+ **Youden's J 最佳阈值**，AUC 从 0.54 提升至 **0.65**，输出特征重要性与高危用户召回名单
 - **安全与工程质量**：API 层 **data_path 路径白名单**（跨平台拒绝路径穿越/盘符/绝对路径）、Agent 执行**硬沙箱**（见上）、GitHub Actions CI（**7 套测试**，Python 3.11/3.12）、依赖锁定、大数据集移出仓库（一键下载脚本）、Docker 部署
 
-## 版本二：精简版（简历空间紧张时）
+## 精简版
 
 **数据分析 Agent 平台**：**自研 ReAct Agent**（LangGraph 显式循环 + 自定义工具集 + **硬沙箱代码执行**：AST 静态检查/受限环境/独立进程/超时熔断），含 **Optuna AutoML、SHAP 可解释性、SARIMA 时序预测、因果推断（statsmodels DID）、RFM 客户分层** 等模块；在 Olist 电商真实数据集（9.9 万订单）上完成销售预测、异常检测与用户分层全流程，并实现**游戏场景**的留存/关卡/付费/LTV 分析与**流失预警 v2**（窗口特征 + 3 模型 + 时间切分 + 最佳阈值，AUC 0.54→0.65）；API 路径白名单安全加固、CI 自动化；Streamlit + FastAPI + Docker 工程化交付。
 
-## 版本三：英文版（外企 / GitHub）
+## 英文版
 
 **Data Analysis Agent Platform | Python / LangGraph / Optuna / SHAP / Streamlit**
 
