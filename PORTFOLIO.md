@@ -2,7 +2,7 @@
 
 > 求职方向：数据分析师 / 数据科学 / 算法工程师
 > 项目仓库：`https://github.com/<你的用户名>/data-analysis-agent`（上传后替换）
-> 技术栈：Python · LangChain · LangGraph · Optuna · SHAP · statsmodels · scikit-learn · Streamlit · FastAPI · Docker
+> 技术栈：Python · LangChain · LangGraph · Optuna · SHAP · statsmodels · scikit-learn · Streamlit · **Next.js 16 · shadcn/ui · TypeScript（v0.3.0 新增现代前端）** · FastAPI · Docker
 
 ---
 
@@ -22,7 +22,7 @@
 | 游戏付费转化 | 注册→活跃→首充→复购 四段漏斗（800→710→191→23），首充中位数 4 天 |
 | 游戏 Cohort LTV | 按注册周累计 LTV 矩阵（LTV = 累计收入÷注册用户） |
 | 游戏流失预警 | **v2：窗口特征 + 3 模型（LR/RF/HistGB）+ 时间切分 + 最佳阈值，AUC 0.54 → 0.65**，输出高危用户 TopN |
-| 功能页面 | 12 个（问答 / AutoML / SHAP / 预测 / RFM / 因果 / A-B / 游戏留存 / 游戏深度） |
+| 功能页面 | Streamlit 12 个 + **Next.js 现代前端 9 个（v0.3.0）**：问答（SSE 流式）/ 图表可视化 / SQL / A-B / 机器学习 / 因果推断 / 报告生成 等 |
 | 自动化测试 | **7 套**（含沙箱安全测试），全部通过（不消耗 LLM token）；GitHub Actions CI 自动运行 |
 | 工程化 | Docker 部署 + 依赖锁定（requirements.lock.txt）+ 大数据集不入库（下载脚本） |
 

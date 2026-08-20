@@ -23,6 +23,17 @@ def _conclusion(p, d_effect, metric="均值"):
     return f"{part}，效应量 {size}（d={d_effect:+.3f}）。{'建议谨慎下结论' if p >= 0.05 else '可认为实验组与对照组存在差异'}。"
 
 
+def _num(x, nd=4):
+    """数值清洗：NaN/inf/None → None（JSON 安全），否则保留 nd 位小数。"""
+    if x is None:
+        return None
+    try:
+        v = float(x)
+    except (TypeError, ValueError):
+        return None
+    return round(v, nd) if np.isfinite(v) else None
+
+
 def ab_ttest(control, treatment):
     """两组连续指标 A/B 检验。control/treatment 为 array-like。"""
     a = pd.to_numeric(pd.Series(control), errors="coerce").dropna().values
@@ -109,19 +120,19 @@ def ols(df: pd.DataFrame, outcome: str, predictors: list, robust: str = "HC1"):
     coefs = {}
     for name in Xd.columns:
         coefs[str(name)] = {
-            "系数": round(float(model.params[name]), 4),
-            "标准误": round(float(model.bse[name]), 4),
-            "t": round(float(model.tvalues[name]), 4),
-            "p": round(float(model.pvalues[name]), 4),
-            "95%置信区间": [round(float(ci.loc[name, 0]), 4), round(float(ci.loc[name, 1]), 4)],
+            "系数": _num(model.params[name]),
+            "标准误": _num(model.bse[name]),
+            "t": _num(model.tvalues[name]),
+            "p": _num(model.pvalues[name]),
+            "95%置信区间": [_num(ci.loc[name, 0]), _num(ci.loc[name, 1])],
         }
     return {
         "系数表": coefs,
-        "R²": round(float(model.rsquared), 4),
+        "R²": _num(model.rsquared),
         "样本量": int(n),
         "自由度": int(model.df_resid),
-        "F": round(float(model.fvalue), 4) if np.isfinite(model.fvalue) else None,
-        "F_p": round(float(model.f_pvalue), 4) if np.isfinite(model.f_pvalue) else None,
+        "F": _num(model.fvalue),
+        "F_p": _num(model.f_pvalue),
         "稳健标准误": robust,
         "提示": f"标准误使用 {robust}（异方差稳健）；回归只能控制已观测混杂，不能证明因果。",
     }
@@ -142,8 +153,11 @@ def did(df: pd.DataFrame, outcome: str, group_col: str, treated_value,
     preds = ["_treated", "_post", "_treated_post"] + list(confounders or [])
     res = ols(d, outcome, preds, robust=robust)
     did_coef = res["系数表"].get("_treated_post", {})
-    p = did_coef.get("p", float("nan"))
-    note = "（p<0.05，统计显著）" if not np.isnan(p) and p < 0.05 else "（不显著）"
+    p = did_coef.get("p")
+    if p is None:
+        note = "（无法估计）"
+    else:
+        note = "（p<0.05，统计显著）" if p < 0.05 else "（不显著）"
     return {
         "DID 估计值": did_coef.get("系数"),
         "p 值": did_coef.get("p"),

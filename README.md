@@ -3,7 +3,7 @@
 ![CI](https://github.com/Fores1109/data-analysis-agent/actions/workflows/ci.yml/badge.svg)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
-> **一句话定位**：基于 LangGraph 的**自研 ReAct 数据分析 Agent** 平台，具备 **AutoML 自动调参、SHAP 可解释性、SARIMA 时序预测、因果推断、A/B 实验** 等算法能力；内置 **Olist 巴西电商真实数据集（9.9 万订单 / 11.2 万明细行）** 与 **游戏数据分析场景包（留存/关卡/付费/LTV/流失预警）**，Streamlit 网页界面 + FastAPI 服务，开箱即用。
+> **一句话定位**：基于 LangGraph 的**自研 ReAct 数据分析 Agent** 平台，具备 **AutoML 自动调参、SHAP 可解释性、SARIMA 时序预测、因果推断、A/B 实验** 等算法能力；内置 **Olist 巴西电商真实数据集（9.9 万订单 / 11.2 万明细行）** 与 **游戏数据分析场景包（留存/关卡/付费/LTV/流失预警）**；双前端：**Streamlit 网页界面 + Next.js 现代前端（v0.3.0 新增）**，FastAPI 服务，开箱即用。
 
 ---
 
@@ -45,8 +45,12 @@
 ```
 用户
  │
+ ├── Streamlit 前端（12 个页面，统一主题，含安全须知提示）   ← 经典界面
+ └── Next.js 现代前端（frontend/，9 个页面，shadcn/ui，暗色模式，聊天 SSE 流式输出）  ← v0.3.0 新增
+       │  （浏览器 → Next.js BFF 代理 → FastAPI，后端无需 CORS）
+ │
  ▼
-Streamlit 前端（12 个页面，统一主题，含安全须知提示）
+FastAPI 服务层（路径白名单安全校验，Docker 一键起）
  │
  ├── 数据源层    CSV / Excel / 数据库(SQLAlchemy) / API
  │               · Olist 电商数据集（9.9 万订单）· 游戏模拟/上传数据
@@ -59,7 +63,6 @@ Streamlit 前端（12 个页面，统一主题，含安全须知提示）
  ├── 算法层      AutoML(Optuna) · SHAP · SARIMA/STL · IsolationForest
  │               · 流失预警 v2(LR/RF/HistGB+窗口特征+时间切分) · RFM
  │               · OLS/DID(statsmodels, HC1 稳健) · A/B 检验(Yates) · 留存/关卡/LTV
- ├── 服务层      FastAPI（路径白名单安全校验，Docker 一键起）
  ├── 质量层      GitHub Actions CI（8 套测试）+ 依赖锁定 requirements.lock.txt
  └── 存储        本地数据（大数据集不入库，脚本下载）+ 报告/图表导出
 ```
@@ -83,12 +86,12 @@ Streamlit 前端（12 个页面，统一主题，含安全须知提示）
 ## 🚀 快速开始（Windows）
 
 ```powershell
-# 1. 双击「启动数据分析Agent.bat」（自动装依赖 + 启动）
+# 1. 双击「启动数据分析Agent.bat」（自动装依赖 + 启动 Streamlit）
 # 2. 首次需编辑 .env 填入 DEEPSEEK_API_KEY（https://platform.deepseek.com 免费注册）
 # 3. 浏览器打开 http://localhost:8501
 ```
 
-手动方式：
+手动方式（Streamlit 经典界面）：
 
 ```bash
 python -m venv .venv && .venv\Scripts\activate
@@ -96,6 +99,22 @@ pip install -r requirements.txt
 cp .env.example .env      # 填 DEEPSEEK_API_KEY
 streamlit run web/app.py
 ```
+
+### 现代前端（Next.js，v0.3.0 新增）
+
+```bash
+# 终端 1：启动 FastAPI 后端
+.venv\Scripts\activate
+uvicorn api.main:app --host 0.0.0.0 --port 8000
+
+# 终端 2：启动前端
+cd frontend
+npm install
+cp .env.example .env      # 默认 API 地址 http://localhost:8000
+npm run dev               # 浏览器打开 http://localhost:3000
+```
+
+> 现代前端包含 9 个页面：仪表盘 / 自然语言分析（SSE 流式输出）/ 图表可视化（plotly）/ SQL 助手 / A/B 实验 / 机器学习 / 因果推断 / 报告生成 / 数据源；通过 BFF 代理对接 FastAPI（无需 CORS）。详见 `frontend/README.md`。
 
 > 需要完全复现开发环境时：`pip install -r requirements.lock.txt`（精确版本锁定）。
 
@@ -168,3 +187,37 @@ docker compose up -d         # API: http://localhost:8000/docs
 - 架构灵感：[khang3004/DataAnalysis_Agent](https://github.com/khang3004/DataAnalysis_Agent)
 - 数据：[Olist Brazilian E-Commerce Dataset](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce)（下载脚本使用公开 GitHub 镜像）
 - 依赖：LangChain / LangGraph / Optuna / SHAP / statsmodels / scikit-learn / Streamlit / FastAPI
+
+---
+
+## 🆕 v0.3.0 更新日志（现代前端版本）
+
+> 本次为**版本更新**（tag: `v0.3.0`），老版本内容保留在 git 历史中（`git log` / Release 列表均可回看）。
+
+### 新增：Next.js 现代前端（`frontend/`）
+
+- **技术栈**：Next.js 16（App Router）+ shadcn/ui + Tailwind CSS v4 + TypeScript + plotly.js
+- **9 个页面**：仪表盘 / 自然语言分析 / 图表可视化 / SQL 助手 / A/B 实验 / 机器学习 / 因果推断 / 报告生成 / 数据源
+- **BFF 代理架构**：浏览器只访问 Next.js 同源 `/api/*`，服务端转发 FastAPI——后端无需 CORS、API 地址不进浏览器
+- **暗色模式**：一键切换（跟随系统），oklch 主题变量
+
+### 新增能力
+
+| 能力 | 说明 |
+|---|---|
+| **聊天 SSE 流式输出** | `POST /api/analyze/stream`，LangGraph `astream` 真实逐 token（过滤工具调用过程），前端打字机效果 + 停止按钮 |
+| **图表可视化** | `POST /api/charts/generate` 返回 plotly figure JSON；7 种图（柱状/折线/散点/直方图/箱线/热力图/时间序列），前端交互渲染，可加入报告 |
+| **报告生成** | `POST /api/report/generate` 汇总问答记录 + 图表 + 数据概览 → Markdown / HTML（含图表）下载 |
+| **A/B 实验接口** | `/api/ab/proportion`（Yates 校正 z 检验）、`/api/ab/test_values`（粘贴数值）、`/api/ab/simulate`（模拟实验） |
+| **因果推断接口** | `/api/causal/ols`（HC1 稳健回归）、`/api/causal/did`（双重差分），前端系数表 + 逐变量解释 |
+| **数据预览接口** | `GET /api/data/preview` 返回列信息与前 50 行（NaN→null、日期→ISO），前端动态表单依赖它 |
+
+### 修复
+
+- 回归/ DID 在秩亏设计下的 NaN 系数导致 API 500 → 统一清洗为 `null`
+- 图表页切换数据集时用旧列名导致 400 → 等待新数据集预览就绪后再重置字段
+- 柱状图计数模式对大表逐行出柱（9.9 万根）→ 先聚合计数 + 高基数友好提示
+
+### 其他
+
+- API 版本 `0.2.0 → 0.3.0`；`frontend/` 自带 `.gitignore`（排除 node_modules/.next/.env，保留 `.env.example`）

@@ -427,3 +427,33 @@ def ask(df, question, llm=None, verbose=False, **kwargs):
     """一句话封装：给定数据和问题，返回 Agent 的回答文本。"""
     agent = build_agent(df, llm=llm, verbose=verbose, **kwargs)
     return agent.invoke({"input": question}).get("output", "")
+
+
+async def ask_stream(df, question, llm=None, **kwargs):
+    """流式版本：逐 token 产出最终回答文本（不含中间工具调用过程）。
+
+    基于 LangGraph astream(stream_mode="messages")：
+    - 只转发 node=agent 且非 tool_call 的 content chunk（即最终回答的 token）；
+    - 工具调用决策消息与工具输出（node=tools）不转发；
+    - 结束时把完整问答写入分层记忆（与 invoke() 行为一致）。
+    """
+    agent = build_agent(df, llm=llm, **kwargs)
+    mem_ctx = agent._memory.build_context(question)
+    state_in = {
+        "question": question,
+        "messages": [],
+        "answer": "",
+        "steps": 0,
+        "memory_context": mem_ctx,
+    }
+    answer_parts: list[str] = []
+    async for chunk, meta in agent._app.astream(state_in, stream_mode="messages"):
+        if (meta or {}).get("langgraph_node") != "agent":
+            continue
+        if getattr(chunk, "tool_call_chunks", None):
+            continue
+        text = getattr(chunk, "content", "")
+        if text:
+            answer_parts.append(text)
+            yield text
+    agent._memory.remember(question, "".join(answer_parts))

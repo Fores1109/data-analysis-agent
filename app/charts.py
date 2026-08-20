@@ -10,8 +10,15 @@ import plotly.graph_objects as go
 def bar(df, x, y=None, title=""):
     if y:
         fig = px.bar(df, x=x, y=y, title=title, text_auto=".2s")
-    else:  # 未指定 Y 时按 X 统计数量
-        fig = px.bar(df, x=x, title=title or f"{x} 数量统计", text_auto=".2s")
+    else:  # 未指定 Y 时按 X 统计数量（先聚合，避免大表逐行出柱）
+        counts = df[x].value_counts().reset_index()
+        counts.columns = [x, "count"]
+        if len(counts) > 200:
+            raise ValueError(
+                f"{x} 的取值过多（{len(counts)} 个），计数模式建议选择类别字段（如 order_status）；"
+                "或指定 Y 轴数值字段做汇总"
+            )
+        fig = px.bar(counts, x=x, y="count", title=title or f"{x} 数量统计", text_auto=".2s")
     return _tidy(fig)
 
 
