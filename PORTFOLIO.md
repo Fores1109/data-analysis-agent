@@ -1,16 +1,16 @@
-# 📊 作品集：数据分析 Agent 平台
+# 📊 作品集：数据分析 Agent 平台：DataPilot
 
 > 求职方向：数据分析师 / 数据科学 / 算法工程师
-> 项目仓库：`https://github.com/<你的用户名>/data-analysis-agent`（上传后替换）
+> 项目仓库：`https://github.com/Fores1109/data-analysis-agent`
 > 技术栈：Python · LangChain · LangGraph · Optuna · SHAP · statsmodels · scikit-learn · Streamlit · **Next.js 16 · shadcn/ui · TypeScript（v0.3.0 新增现代前端）** · FastAPI · Docker
 
 ---
 
-## 项目一句话
+## 项目简介
 
 基于 LangGraph 的**自研 ReAct 数据分析 Agent**（非官方封装）平台，具备 **AutoML 自动调参、SHAP 可解释性、SARIMA 时序预测、因果推断、A/B 实验** 等算法能力；内置 **Olist 巴西电商真实数据集（9.9 万订单 / 11.2 万明细行）** 与 **游戏数据分析场景包**，开箱即用。
 
-## 量化成果（全部为实测数据，可现场演示）
+## 量化成果
 
 | 指标 | 数值 |
 |---|---|
@@ -28,7 +28,7 @@
 
 ---
 
-## 版本一：简历项目描述（中文，推荐）
+## 简历项目描述
 
 **数据分析 Agent 平台｜Python / LangGraph / Optuna / SHAP / Streamlit**
 
@@ -42,11 +42,11 @@
 - 构建**游戏厂商分析模块**：同期群留存矩阵、留存曲线、DAU/WAU/MAU 粘性、付费率/ARPU/ARPPU、关卡通过漏斗、首充转化漏斗、Cohort LTV；并实现**流失预警 v2**——**窗口特征**（近 7/14 天活跃、活跃趋势、距上次付费天数、关卡推进速度）+ 逻辑回归/随机森林/**HistGB**（class_weight 处理 83~87% 流失率的类别不平衡）+ **时间切分**（按最近活跃日期排序，用过去预测未来，避免泄漏）+ **Youden's J 最佳阈值**，AUC 从 0.54 提升至 **0.65**，输出特征重要性与高危用户召回名单
 - **安全与工程质量**：API 层 **data_path 路径白名单**（跨平台拒绝路径穿越/盘符/绝对路径）、Agent 执行**硬沙箱**（见上）、GitHub Actions CI（**7 套测试**，Python 3.11/3.12）、依赖锁定、大数据集移出仓库（一键下载脚本）、Docker 部署
 
-## 版本二：精简版（简历空间紧张时）
+## 精简版
 
 **数据分析 Agent 平台**：**自研 ReAct Agent**（LangGraph 显式循环 + 自定义工具集 + **硬沙箱代码执行**：AST 静态检查/受限环境/独立进程/超时熔断），含 **Optuna AutoML、SHAP 可解释性、SARIMA 时序预测、因果推断（statsmodels DID）、RFM 客户分层** 等模块；在 Olist 电商真实数据集（9.9 万订单）上完成销售预测、异常检测与用户分层全流程，并实现**游戏场景**的留存/关卡/付费/LTV 分析与**流失预警 v2**（窗口特征 + 3 模型 + 时间切分 + 最佳阈值，AUC 0.54→0.65）；API 路径白名单安全加固、CI 自动化；Streamlit + FastAPI + Docker 工程化交付。
 
-## 版本三：英文版（外企 / GitHub）
+## 英文版
 
 **Data Analysis Agent Platform | Python / LangGraph / Optuna / SHAP / Streamlit**
 
@@ -89,6 +89,24 @@
 | **游戏行业基准知道吗？** | 次留 35% 及格 / 40%+ 良好、7 留 15-20%、30 留 5-10%、付费率 2-5%、DAU/MAU 粘性 20%+ 算健康 |
 
 ---
+## 🎙️ 面试讲稿
+
+**背景**：市面上数据分析工具要么是纯聊天、要么是固定报表，我做了个结合两者的平台——自然语言驱动 + 算法深度，并覆盖电商与游戏两个垂直场景。
+
+**最值得讲的技术点**：
+1. **自研 Agent（不是套壳）**：LangChain 官方的 `create_pandas_dataframe_agent` 已标记 experimental 且无法注入安全控制，所以我用 LangGraph 手写了显式 ReAct 循环——agent 节点（LLM 决策）→ 工具节点（执行）→ 条件边（继续/结束），自定义工具集、循环上限可审计。面试官问"Agent 是怎么实现的"，我可以直接讲图结构、工具协议（tool calling）、状态管理。
+2. **分层记忆**：对话超过阈值后，用 LLM 把早期对话**滚动压缩**成要点摘要（recursive summarization，防止上下文无限膨胀）；每轮问答的结论进入**长期记忆**，用字符级 n-gram TF-IDF 稀疏向量 + cosine 做本地语义检索（零 embedding API 依赖），每轮把最相关的历史结论注入 system prompt——实测第 5 轮问"我之前问的最高月份是多少"，Agent 能从摘要/检索中正确引用 124,048 元。
+3. **硬沙箱**：LLM 会生成代码，我的 python_repl 工具在**执行前做 AST 静态检查**（禁 os/subprocess/open/写文件属性），再放进**受限执行环境**（白名单模块 + 安全 builtins），最后**独立子进程 + 30s 超时**运行。这四道防线是代码级硬约束，不是提示词软约束——`tests/test_sandbox.py` 里 13 个用例覆盖 import os、open()、to_csv、eval、socket、死循环等攻击面。
+4. **AutoML / 可解释性**：Optuna(TPE) 调参曲线 + SHAP TreeExplainer，CV 优化目标与排序指标统一（分类 F1(weighted)）。
+
+**垂直场景的故事（游戏流失预警 v2）**：v1 的随机切分会信息泄漏，我改成**时间切分**（按最近活跃日期排序，用过去预测未来）；特征工程加了**近 7/14 天活跃天数、活跃趋势、距上次付费天数**等窗口特征捕捉"活跃度衰减"；模型从 2 个加到 3 个（新增 HistGB）；最后用 **Youden's J 最佳阈值**生成高危名单。这套组合把 AUC 从 0.54 提到 0.65，更重要的是整个流程（预警→召回→再评估闭环）是业务可用的。
+
+**统计严谨性**：DID 用 statsmodels OLS + **HC1 异方差稳健标准误** + 95% 置信区间；A/B 双比例 z 检验默认 **Yates 连续性校正**；Cohen's d 用自由度加权合并标准差——每个都是可以展开讲的统计细节。
+
+**数据**：Olist 巴西电商 9.9 万订单（11.2 万明细行）——SARIMA 周季节预测、RFM 分层 9.8 万客户、异常检测 37 个异常点（全部真实结果）。
+
+**可以准备的问题**：ReAct 循环如何避免死循环？tool calling 协议怎么设计？AST 检查的绕过面有哪些？沙箱为什么要子进程？**滚动摘要 vs 截断？摘要丢了细节怎么办？TF-IDF 检索 vs embedding 检索的取舍？** SARIMA 为什么用周季节？DID 的平行趋势假设？Shapley 值的公理化性质？类别不平衡怎么处理？时间切分 vs 随机切分？LTV 的口径？次留/7留/30留的行业基准？
+
 
 ## 演示与文档
 
@@ -98,4 +116,3 @@
 - **测试**：`test_smoke.py` / `verify_fixes.py` / `test_sandbox.py` / `test_algo.py` / `test_game.py` / `test_game_advanced.py` / `test_web.py`（7 套，CI 自动运行）
 - **演示路径建议**：进「12_游戏深度分析」→ 生成模拟数据 → 分别点关卡漏斗 / 付费转化 / Cohort LTV / 流失预警，全程 1 分钟出结果
 
-> 📌 Demo 视频建议：录一段 1-2 分钟操作录屏（留存矩阵 + 流失预警高危名单是最好看的两个画面），放 YouTube/B 站后把链接贴到这里，面试官点开即看。
